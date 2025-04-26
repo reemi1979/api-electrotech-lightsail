@@ -12,7 +12,7 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 
 
-const JWT_SECRET = process.env.JWT_SECRET; // âž¡ï¸ Ta clÃ© privÃ©e pour signer/valider les tokens
+const JWT_SECRET = process.env.JWT_SECRET;
 
 
 const app = express();
@@ -28,6 +28,8 @@ app.use(cors({
 
     "https://www.electrotech.ca",
 
+    "https://www.electrotech.qc.ca",
+
     "http://localhost:5000"
 
   ]
@@ -41,7 +43,7 @@ app.use(express.json());
 let clientSocket = null;
 
 
-// í ½í´µ WebSocket backend local
+// í ¼í¾¯ Gestion des connexions WebSocket
 
 io.on('connection', (socket) => {
 
@@ -61,13 +63,12 @@ io.on('connection', (socket) => {
 });
 
 
-// í ½í´µ Middleware obligatoire de vÃ©rification de token JWT
+// í ¼í¾¯ Middleware JWT pour sÃ©curiser /api/data
 
 app.use('/api/data', (req, res, next) => {
 
   const authHeader = req.headers['authorization'];
 
-  
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
 
@@ -83,7 +84,7 @@ app.use('/api/data', (req, res, next) => {
 
     const payload = jwt.verify(token, JWT_SECRET);
 
-    req.user = payload; // (facultatif si tu veux savoir qui a fait la requÃªte)
+    req.user = payload;
 
     next();
 
@@ -98,7 +99,7 @@ app.use('/api/data', (req, res, next) => {
 });
 
 
-// í ½í´µ API principale relayÃ©e au backend
+// í ¼í¾¯ Route API relay vers backend local
 
 app.post('/api/data', async (req, res) => {
 
@@ -118,17 +119,42 @@ app.post('/api/data', async (req, res) => {
 });
 
 
-// í ½í´µ Route pour donner un token temporaire
+// í ¼í¾¯ Route sÃ©curisÃ©e pour obtenir un token JWT
 
 app.get('/get-token', (req, res) => {
+
+  const referer = req.headers['referer'] || req.headers['origin'] || '';
+
+  const originIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
+
+
+  const cleanReferer = referer.replace(/:\d+$/, '');
+
+
+  if (
+
+    !(cleanReferer.startsWith('https://electrotech.ca') ||
+
+      cleanReferer.startsWith('https://www.electrotech.ca') ||
+
+      originIp.startsWith('24.37.148.150'))
+
+  ) {
+
+    console.warn(`Tentative bloquÃ©e : Referer = ${cleanReferer}, IP = ${originIp}`);
+
+    return res.status(403).send('Forbidden: Referer ou IP non autorisÃ©');
+
+  }
+
 
   const payload = {
 
     app: 'react-electrotech',
 
-    iat: Math.floor(Date.now() / 1000), // now
+    iat: Math.floor(Date.now() / 1000),
 
-    exp: Math.floor(Date.now() / 1000) + (60 * 15) // expire dans 15 minutes
+    exp: Math.floor(Date.now() / 1000) + (60 * 15)
 
   };
 
@@ -139,6 +165,8 @@ app.get('/get-token', (req, res) => {
 
 });
 
+
+// í ¼í¾¯ DÃ©marrer le serveur
 
 server.listen(3000, '0.0.0.0', () => {
 
