@@ -1,5 +1,6 @@
 require('dotenv').config();
 
+
 const express = require('express');
 
 const http = require('http');
@@ -8,8 +9,10 @@ const socketio = require('socket.io');
 
 const cors = require('cors');
 
+const jwt = require('jsonwebtoken');
 
-const API_SECRET_KEY = process.env.API_SECRET_KEY;
+
+const JWT_SECRET = process.env.JWT_SECRET; // âž¡ï¸ Ta clÃ© privÃ©e pour signer/valider les tokens
 
 
 const app = express();
@@ -38,6 +41,8 @@ app.use(express.json());
 let clientSocket = null;
 
 
+// í ½í´µ WebSocket backend local
+
 io.on('connection', (socket) => {
 
   console.log('Backend local connectÃ©');
@@ -56,27 +61,46 @@ io.on('connection', (socket) => {
 });
 
 
-app.post('/api/data', async (req, res) => {
+// í ½í´µ Middleware obligatoire de vÃ©rification de token JWT
 
-  const originIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
+app.use('/api/data', (req, res, next) => {
 
+  const authHeader = req.headers['authorization'];
 
-  if (originIp.startsWith('24.37.148.150')) {
+  
 
-    // Si c'est l'IP fixe d'Electrotech : accepte sans clÃ©
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
 
-  } else {
-
-    const headerKey = req.headers['x-api-key'];
-
-    if (headerKey !== API_SECRET_KEY) {
-
-      return res.status(403).send('Forbidden');
-
-    }
+    return res.status(401).send('Unauthorized: Token manquant');
 
   }
 
+
+  const token = authHeader.split(' ')[1];
+
+
+  try {
+
+    const payload = jwt.verify(token, JWT_SECRET);
+
+    req.user = payload; // (facultatif si tu veux savoir qui a fait la requÃªte)
+
+    next();
+
+  } catch (error) {
+
+    console.error('Erreur de vÃ©rification JWT:', error.message);
+
+    return res.status(403).send('Forbidden: Token invalide ou expirÃ©');
+
+  }
+
+});
+
+
+// í ½í´µ API principale relayÃ©e au backend
+
+app.post('/api/data', async (req, res) => {
 
   if (!clientSocket) {
 
@@ -90,6 +114,28 @@ app.post('/api/data', async (req, res) => {
     res.json(response);
 
   });
+
+});
+
+
+// í ½í´µ Route pour donner un token temporaire
+
+app.get('/get-token', (req, res) => {
+
+  const payload = {
+
+    app: 'react-electrotech',
+
+    iat: Math.floor(Date.now() / 1000), // now
+
+    exp: Math.floor(Date.now() / 1000) + (60 * 15) // expire dans 15 minutes
+
+  };
+
+
+  const token = jwt.sign(payload, JWT_SECRET);
+
+  res.json({ token });
 
 });
 
