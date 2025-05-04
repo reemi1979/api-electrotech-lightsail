@@ -1,0 +1,24 @@
+{
+  "timestamp": "2025-05-04T15:39:10.578Z",
+  "projects": [
+    {
+      "id": 1,
+      "name": "Projet Alpha",
+      "status": "En cours",
+      "progress": 42
+    },
+    {
+      "id": 2,
+      "name": "Projet Bravo",
+      "status": "Complété",
+      "progress": 100
+    },
+    {
+      "id": 3,
+      "name": "Projet Charlie",
+      "status": "En attente",
+      "progress": 0
+    }
+  ],
+  "note": "Données générées automatiquement"
+}
