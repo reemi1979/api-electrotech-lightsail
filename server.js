@@ -20,37 +20,39 @@ app.use(cors({
 
 app.use(express.json());
 
-// 🛡️ Middleware JWT pour sécuriser /api/data et /uploadData
-app.use(['/api/data', '/uploadData'], (req, res, next) => {
+// 🛡️ Middleware JWT → protège toutes les routes sauf /get-token
+app.use(['/getDataProject', '/uploadData', '/uploadDataProject'], (req, res, next) => {
   const authHeader = req.headers['authorization'];
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.warn('⛔ Accès refusé : Token manquant');
     return res.status(401).send('Unauthorized: Token manquant');
   }
+
   const token = authHeader.split(' ')[1];
   try {
     const payload = jwt.verify(token, JWT_SECRET);
     req.user = payload;
     next();
-  } catch (error) {
-    console.error('Erreur de vérification JWT:', error.message);
+  } catch (err) {
+    console.warn('⛔ Token invalide ou expiré:', err.message);
     return res.status(403).send('Forbidden: Token invalide ou expiré');
   }
 });
 
-// 🚩 Route POST /uploadData : reçoit et sauvegarde les données
+// 🚩 POST → sauvegarder les données projet
 app.post('/uploadDataProject', (req, res) => {
   try {
     const data = req.body;
     fs.writeFileSync(DATA_FILE_PROJECT, JSON.stringify(data, null, 2));
-    console.log('✅ Données sauvegardées dans data.json');
+    console.log('✅ Données sauvegardées dans data_project.json');
     res.json({ success: true });
   } catch (err) {
-    console.error('❌ Erreur écriture data.json:', err);
+    console.error('❌ Erreur écriture data_project.json:', err);
     res.status(500).send('Erreur serveur lors de l\'écriture');
   }
 });
 
-// 🚩 Route GET /getData : lecture des données
+// 🚩 GET → lire les données projet
 app.get('/getDataProject', (req, res) => {
   try {
     const jsonData = fs.readFileSync(DATA_FILE_PROJECT, 'utf8');
@@ -62,13 +64,7 @@ app.get('/getDataProject', (req, res) => {
   }
 });
 
-// 🛡️ Route POST /api/data : toujours protégée par JWT (même logique qu’avant)
-app.post('/api/data', (req, res) => {
-  // Tu peux adapter ici si besoin
-  res.json({ message: "API data route en place, socket désactivé." });
-});
-
-// 🏷️ Route GET /get-token : pour obtenir un token JWT
+// 🏷️ GET → générer un token JWT
 app.get('/get-token', (req, res) => {
   const referer = req.headers['referer'] || req.headers['origin'] || '';
   const originIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
@@ -87,7 +83,6 @@ app.get('/get-token', (req, res) => {
     console.warn(`Tentative bloquée : Referer = ${cleanReferer}, IP = ${originIp}`);
     return res.status(403).send('Forbidden: Referer ou IP non autorisé');
   }
-  
 
   const payload = {
     app: 'react-electrotech',
@@ -96,10 +91,11 @@ app.get('/get-token', (req, res) => {
   };
 
   const token = jwt.sign(payload, JWT_SECRET);
+  console.log('✅ Token JWT généré et retourné');
   res.json({ token });
 });
 
-// 🚀 Démarrer le serveur
+// 🚀 Serveur en écoute
 app.listen(3000, '0.0.0.0', () => {
-  console.log('API Electrotech en écoute sur 0.0.0.0:3000');
+  console.log('API Electrotech sécurisée en écoute sur 0.0.0.0:3000');
 });

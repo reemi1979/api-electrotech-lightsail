@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-05-04T15:39:10.578Z",
+  "timestamp": "2025-05-04T15:53:23.865Z",
   "projects": [
     {
       "id": 1,
@@ -18,6 +18,18 @@
       "name": "Projet Charlie",
       "status": "En attente",
       "progress": 0
+    },
+    {
+      "id": 4,
+      "name": "Projet X",
+      "status": "dddsds",
+      "progress": 100
+    },
+    {
+      "id": 5,
+      "name": "Projet Y",
+      "status": "En fdfdfnte",
+      "progress": 40
     }
   ],
   "note": "Données générées automatiquement"
