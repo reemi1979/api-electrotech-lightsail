@@ -12,7 +12,6 @@ const DATA_FILE_PROJECT = path.join(__dirname, 'data_project.json');
 
 if (!fs.existsSync(DATA_FILE_PROJECT)) {
   fs.writeFileSync(DATA_FILE_PROJECT, '[]');  // ou '{}' si tu veux un objet vide
-  console.log('✅ Fichier data_project.json créé vide');
 }
 
 const app = express();
