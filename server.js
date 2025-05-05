@@ -1,3 +1,5 @@
+//api-electrotech-lightsail/server.js
+
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -7,6 +9,11 @@ const path = require('path');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const DATA_FILE_PROJECT = path.join(__dirname, 'data_project.json');
+
+if (!fs.existsSync(DATA_FILE_PROJECT)) {
+  fs.writeFileSync(DATA_FILE_PROJECT, '[]');  // ou '{}' si tu veux un objet vide
+  console.log('✅ Fichier data_project.json créé vide');
+}
 
 const app = express();
 
@@ -18,7 +25,7 @@ app.use(cors({
   ]
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 // 🛡️ Middleware JWT → protège toutes les routes sauf /get-token
 app.use(['/getDataProject', '/uploadData', '/uploadDataProject'], (req, res, next) => {
